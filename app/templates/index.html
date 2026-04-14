@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>深圳 AI 外贸助手</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Noto+Sans+SC:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/style.css" />
+</head>
+<body>
+
+  <div class="status-bar">
+    <div class="status-inner">
+      <span class="status-dot" id="statusDot"></span>
+      <span id="statusText">正在连接…</span>
+      <span class="status-sep">·</span>
+      <span id="statusModel">{{ settings.llm_model }}</span>
+      <span class="status-sep">·</span>
+      <span id="statusMode" class="{% if settings.use_mock_llm %}mode-mock{% else %}mode-live{% endif %}">
+        {% if settings.use_mock_llm %}Mock 模式{% else %}真实模型{% endif %}
+      </span>
+    </div>
+  </div>
+
+  <header class="site-header">
+    <div class="header-inner">
+      <div class="brand">
+        <div class="brand-icon">
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+            <path d="M10 2L2 7v6l8 5 8-5V7L10 2z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
+            <path d="M2 7l8 5 8-5" stroke="currentColor" stroke-width="1.5"/>
+            <path d="M10 12v6" stroke="currentColor" stroke-width="1.5"/>
+          </svg>
+        </div>
+        <div>
+          <div class="brand-name">深圳 AI 外贸助手</div>
+          <div class="brand-sub">询盘转单 · 知识库问答</div>
+        </div>
+      </div>
+      <nav class="tab-nav">
+        <button class="tab-btn active" data-tab="kb">知识库</button>
+        <button class="tab-btn" data-tab="inquiry">询盘分析</button>
+        <button class="tab-btn" data-tab="history">历史记录</button>
+      </nav>
+    </div>
+  </header>
+
+  <main class="main-content">
+
+    <!-- ── 知识库 ── -->
+    <section class="tab-panel active" id="tab-kb">
+      <div class="panel-grid">
+
+        <div class="card">
+          <div class="card-head">
+            <h2 class="card-title">产品资料库</h2>
+            <p class="card-desc">上传产品手册、FAQ、认证文件，AI 自动切块入库</p>
+          </div>
+          <div class="upload-zone" id="uploadZone">
+            <input type="file" id="fileInput" accept=".txt,.md,.pdf,.docx" hidden />
+            <div class="upload-icon">
+              <svg width="26" height="26" viewBox="0 0 26 26" fill="none">
+                <path d="M13 4v14M7 10l6-6 6 6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M4 19v1a2 2 0 002 2h14a2 2 0 002-2v-1" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+              </svg>
+            </div>
+            <p class="upload-label">点击上传或拖拽文件</p>
+            <p class="upload-hint">.txt &nbsp;·&nbsp; .md &nbsp;·&nbsp; .pdf &nbsp;·&nbsp; .docx</p>
+          </div>
+          <div class="btn-row">
+            <button class="btn btn-primary" id="uploadBtn">上传文件</button>
+            <button class="btn btn-ghost" id="seedBtn">加载 Demo 文档</button>
+          </div>
+          <div id="uploadMsg" class="inline-msg hidden"></div>
+
+          <div class="doc-list-wrap">
+            <p class="section-label">已入库文档</p>
+            <ul class="doc-list" id="docList">
+              {% for doc in documents %}
+              <li class="doc-item">
+                <svg class="doc-icon" width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M2 1h7l2 2v9H2V1z" stroke="currentColor" stroke-width="1.2"/><path d="M8 1v2h2" stroke="currentColor" stroke-width="1.2"/></svg>
+                <span class="doc-name">{{ doc.file_name }}</span>
+                <span class="doc-type">{{ doc.file_type }}</span>
+              </li>
+              {% else %}
+              <li class="doc-empty" id="docEmpty">暂无文档 — 点击上传或加载 Demo</li>
+              {% endfor %}
+            </ul>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-head">
+            <h2 class="card-title">知识库问答</h2>
+            <p class="card-desc">问任何产品、认证、交期问题，AI 从资料库中检索回答</p>
+          </div>
+          <div class="qa-input-wrap">
+            <input type="text" id="qaInput" class="text-input" placeholder="例：SL-A100 的 MOQ 和质保期是多少？" />
+            <button class="btn btn-primary" id="qaBtn">提问</button>
+          </div>
+
+          <div id="qaResult" class="qa-result hidden">
+            <div class="qa-answer" id="qaAnswer"></div>
+            <div class="qa-sources" id="qaSources"></div>
+          </div>
+
+          <div class="sample-wrap">
+            <p class="section-label">示例问题</p>
+            <div class="chip-row">
+              <button class="chip" data-q="SL-A100 的 MOQ 和质保是多少？">MOQ 与质保</button>
+              <button class="chip" data-q="有哪些认证？">认证情况</button>
+              <button class="chip" data-q="退货和售后政策是什么？">退货政策</button>
+              <button class="chip" data-q="交期一般多久？">交期</button>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ── 询盘分析 ── -->
+    <section class="tab-panel" id="tab-inquiry">
+      <div class="panel-grid">
+
+        <div class="card">
+          <div class="card-head">
+            <h2 class="card-title">提交询盘</h2>
+            <p class="card-desc">粘贴客户原文，AI 自动打分、提取规格、生成英文首轮回复</p>
+          </div>
+          <div class="form-grid-2">
+            <div class="form-field">
+              <label class="field-label">渠道</label>
+              <select id="inqChannel" class="select-input">
+                <option value="email">Email</option>
+                <option value="form">官网表单</option>
+                <option value="webchat">网站聊天</option>
+                <option value="alibaba">阿里巴巴</option>
+              </select>
+            </div>
+            <div class="form-field">
+              <label class="field-label">公司名</label>
+              <input type="text" id="inqCompany" class="text-input" placeholder="ABC Trading GmbH" />
+            </div>
+            <div class="form-field">
+              <label class="field-label">联系人</label>
+              <input type="text" id="inqName" class="text-input" placeholder="John Smith" />
+            </div>
+            <div class="form-field">
+              <label class="field-label">邮箱</label>
+              <input type="email" id="inqEmail" class="text-input" placeholder="john@example.com" />
+            </div>
+          </div>
+          <div class="form-field" style="margin-top:14px">
+            <label class="field-label">询盘主题</label>
+            <input type="text" id="inqSubject" class="text-input" placeholder="Inquiry for Smart Lock SL-A100" />
+          </div>
+          <div class="form-field" style="margin-top:14px">
+            <label class="field-label">询盘正文 <span class="required">*</span></label>
+            <textarea id="inqBody" class="textarea-input" rows="8" placeholder="Hello, we are a distributor in Germany looking for 2000 pcs of smart lock model SL-A100. We need CE and FCC certification. Please quote FOB Shenzhen price and advise lead time."></textarea>
+          </div>
+          <div style="margin-top:20px">
+            <button class="btn btn-primary btn-wide" id="inqSubmit">
+              <span>分析询盘</span>
+              <svg width="15" height="15" viewBox="0 0 15 15" fill="none"><path d="M3 7.5h9M8.5 4l3.5 3.5-3.5 3.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </button>
+          </div>
+          <div id="inqMsg" class="inline-msg hidden"></div>
+        </div>
+
+        <div class="card result-card">
+          <div class="result-placeholder" id="inqPlaceholder">
+            <svg width="44" height="44" viewBox="0 0 44 44" fill="none">
+              <circle cx="22" cy="22" r="20" stroke="currentColor" stroke-width="1.2" stroke-dasharray="4 4" opacity="0.3"/>
+              <path d="M14 22h16M22 14v16" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" opacity="0.25"/>
+            </svg>
+            <p>提交询盘后，分析结果将在此显示</p>
+          </div>
+
+          <div id="inqResult" class="inq-result hidden">
+            <div class="result-header">
+              <div class="grade-block">
+                <span class="grade-badge" id="resBadge">A</span>
+                <div>
+                  <div class="grade-score" id="resScore">85 分</div>
+                  <div class="grade-label">询盘质量评级</div>
+                </div>
+              </div>
+            </div>
+
+            <div class="result-section">
+              <p class="result-section-title">建议动作</p>
+              <div class="action-box" id="resAction"></div>
+            </div>
+
+            <div class="result-section" id="specsSection">
+              <p class="result-section-title">提取规格</p>
+              <div class="spec-grid" id="resSpecs"></div>
+            </div>
+
+            <div class="result-section">
+              <p class="result-section-title">英文首轮回复</p>
+              <div class="reply-subject" id="resSubject"></div>
+              <div class="reply-body" id="resBody"></div>
+              <button class="btn btn-ghost btn-sm copy-btn" id="copyReplyBtn">复制回复</button>
+            </div>
+
+            <details class="raw-details">
+              <summary>原始分析 JSON</summary>
+              <pre id="resJson" class="raw-json"></pre>
+            </details>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ── 历史记录 ── -->
+    <section class="tab-panel" id="tab-history">
+      <div class="history-toolbar">
+        <h2 class="card-title">询盘历史</h2>
+        <button class="btn btn-ghost btn-sm" id="refreshHistory">刷新列表</button>
+      </div>
+      <div id="historyList">
+        {% for item in inquiries %}
+        <div class="history-item">
+          <div class="grade-badge grade-sm grade-{{ item.lead_grade|lower }}">{{ item.lead_grade }}</div>
+          <div class="history-body">
+            <div class="history-top">
+              <span class="history-title">{{ item.subject or 'Untitled Inquiry' }}</span>
+              <span class="history-score">{{ item.lead_score }}<small> 分</small></span>
+            </div>
+            <div class="history-meta">
+              <span>{{ item.company or '未知公司' }}</span>
+              <span class="dot">·</span>
+              <span>{{ item.sender_email or '无邮箱' }}</span>
+              <span class="dot">·</span>
+              <span class="channel-tag">{{ item.source_channel }}</span>
+            </div>
+            {% if item.suggested_action %}
+            <div class="history-action">{{ item.suggested_action }}</div>
+            {% endif %}
+          </div>
+        </div>
+        {% else %}
+        <div class="history-empty" id="historyEmpty">暂无询盘记录</div>
+        {% endfor %}
+      </div>
+    </section>
+
+  </main>
+
+  <div class="toast" id="toast"></div>
+  <script src="/static/app.js"></script>
+</body>
+</html>
