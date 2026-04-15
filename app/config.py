@@ -1,3 +1,4 @@
+import os
 from functools import lru_cache
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -5,7 +6,9 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 class Settings(BaseSettings):
     app_name: str = "Shenzhen AI Agent MVP"
-    database_url: str = "sqlite:///./agent.db"
+    database_url: str = os.getenv("DATABASE_URL") or (
+        "sqlite:////tmp/agent.db" if os.getenv("PORT") else "sqlite:///./agent.db"
+    )
     use_mock_llm: bool = True
     llm_api_key: str = ""
     llm_base_url: str = "https://api.deepseek.com/v1"

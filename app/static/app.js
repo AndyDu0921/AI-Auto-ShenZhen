@@ -7,6 +7,11 @@
 // ── Utils ──────────────────────────────────────────
 
 function $(id) { return document.getElementById(id); }
+const BASE_PATH = window.APP_BASE || '';
+function withBasePath(path) {
+  if (!path.startsWith('/')) return `${BASE_PATH}/${path}`;
+  return `${BASE_PATH}${path}`;
+}
 
 function showMsg(el, text, type = 'info') {
   el.textContent = text;
@@ -78,7 +83,7 @@ async function checkHealth() {
   const dot  = $('statusDot');
   const text = $('statusText');
   try {
-    const data = await apiGet('/api/health');
+    const data = await apiGet(withBasePath('/api/health'));
     dot.className  = 'status-dot online';
     text.textContent = data.app || '已连接';
   } catch {
@@ -118,12 +123,12 @@ async function doUpload(file) {
   const fd = new FormData();
   fd.append('file', file);
   try {
-    const data = await apiPost('/api/docs/upload', fd, true);
-    showMsg(msg, `✓  已上传：${data.file_name}`, 'success');
+    const data = await apiPost(withBasePath('/api/docs/upload'), fd, true);
+    showMsg(msg, `已上传：${data.file_name}`, 'success');
     toast('文档上传成功');
     await refreshDocList();
   } catch (err) {
-    showMsg(msg, `✗  ${err.message}`, 'error');
+    showMsg(msg, `错误：${err.message}`, 'error');
   } finally {
     setLoading(btn, false);
     fileInput.value = '';
@@ -139,16 +144,16 @@ $('seedBtn').addEventListener('click', async () => {
   setLoading(btn, true, '加载中…');
   hideMsg(msg);
   try {
-    const data = await apiPost('/api/demo/seed', {});
+    const data = await apiPost(withBasePath('/api/demo/seed'), {});
     if (data.count === 0) {
       showMsg(msg, 'Demo 文档已全部加载，无需重复', 'info');
     } else {
-      showMsg(msg, `✓  已加载 ${data.count} 个 Demo 文档：${data.loaded.join('、')}`, 'success');
+      showMsg(msg, `已加载 ${data.count} 个 Demo 文档：${data.loaded.join('、')}`, 'success');
       toast(`已加载 ${data.count} 个 Demo 文档`);
       await refreshDocList();
     }
   } catch (err) {
-    showMsg(msg, `✗  ${err.message}`, 'error');
+    showMsg(msg, `错误：${err.message}`, 'error');
   } finally {
     setLoading(btn, false);
   }
@@ -159,7 +164,7 @@ $('seedBtn').addEventListener('click', async () => {
 
 async function refreshDocList() {
   try {
-    const docs = await apiGet('/api/docs');
+    const docs = await apiGet(withBasePath('/api/docs'));
     const list = $('docList');
     if (docs.length === 0) {
       list.innerHTML = '<li class="doc-empty">暂无文档 — 点击上传或加载 Demo</li>';
@@ -191,10 +196,10 @@ async function doAsk(question) {
   result.classList.add('hidden');
 
   try {
-    const data = await apiPost('/api/ask', { question });
+    const data = await apiPost(withBasePath('/api/ask'), { question });
     answer.textContent = data.answer || '（无回答）';
     sources.innerHTML = (data.sources || []).map(s =>
-      `<span class="qa-source-chip">📄 ${escHtml(s.source_label)}</span>`
+      `<span class="qa-source-chip">SOURCE ${escHtml(s.source_label)}</span>`
     ).join('');
     result.classList.remove('hidden');
   } catch (err) {
@@ -241,12 +246,12 @@ $('inqSubmit').addEventListener('click', async () => {
   };
 
   try {
-    const data = await apiPost('/api/inquiries', payload);
+    const data = await apiPost(withBasePath('/api/inquiries'), payload);
     renderInquiryResult(data);
-    showMsg(msg, '✓  分析完成', 'success');
+    showMsg(msg, '分析完成', 'success');
     setTimeout(() => hideMsg(msg), 2000);
   } catch (err) {
-    showMsg(msg, `✗  ${err.message}`, 'error');
+    showMsg(msg, `错误：${err.message}`, 'error');
   } finally {
     setLoading(btn, false);
   }
@@ -314,7 +319,7 @@ $('copyReplyBtn').addEventListener('click', async () => {
     await navigator.clipboard.writeText(full);
     toast('已复制回复内容');
     const btn = $('copyReplyBtn');
-    btn.textContent = '✓ 已复制';
+    btn.textContent = '已复制';
     setTimeout(() => { btn.textContent = '复制回复'; }, 2000);
   } catch {
     toast('复制失败，请手动选择文本');
@@ -327,7 +332,7 @@ $('copyReplyBtn').addEventListener('click', async () => {
 async function loadHistory() {
   const listEl = $('historyList');
   try {
-    const items = await apiGet('/api/inquiries');
+    const items = await apiGet(withBasePath('/api/inquiries'));
     if (items.length === 0) {
       listEl.innerHTML = '<div class="history-empty">暂无询盘记录</div>';
       return;

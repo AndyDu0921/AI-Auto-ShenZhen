@@ -8,3 +8,9 @@ agent.db
 .DS_Store
 .idea/
 .vscode/
+
+# Tencent Cloud EdgeOne
+.env
+.edgeone/*
+.tef_dist/*
+  
