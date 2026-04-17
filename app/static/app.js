@@ -199,7 +199,7 @@ async function doAsk(question) {
     const data = await apiPost(withBasePath('/api/ask'), { question });
     answer.textContent = data.answer || '（无回答）';
     sources.innerHTML = (data.sources || []).map(s =>
-      `<span class="qa-source-chip">SOURCE ${escHtml(s.source_label)}</span>`
+      `<span class="qa-source-chip">来源：${escHtml(s.source_label)}</span>`
     ).join('');
     result.classList.remove('hidden');
   } catch (err) {
